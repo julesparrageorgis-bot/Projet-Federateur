@@ -1,0 +1,258 @@
+@startuml
+skinparam linetype ortho
+skinparam classAttributeIconSize 0
+skinparam class {
+  BackgroundColor White
+  BorderColor Black
+}
+
+package "Authentification" {
+  class users {
+    +id : INT <<PK>>
+    +nom : VARCHAR
+    +prenom : VARCHAR
+    +email : VARCHAR <<unique>>
+    +mot_de_passe : VARCHAR
+    +photo_profil : VARCHAR
+    +bio : TEXT
+    +date_creation : DATETIME
+    +consentement_rgpd : BOOLEAN
+    +role : ENUM(etudiant, enseignant, admin)
+  }
+
+  class etudiants {
+    +user_id : INT <<PK, FK>>
+    +matricule : VARCHAR
+    +promotion : VARCHAR
+    +specialite : VARCHAR
+  }
+
+  class enseignants {
+    +user_id : INT <<PK, FK>>
+    +departement : VARCHAR
+    +grade : VARCHAR
+  }
+}
+
+package "Pédagogie" {
+  class matieres {
+    +id : INT <<PK>>
+    +nom : VARCHAR
+    +description : TEXT
+    +enseignant_id : INT <<FK>>
+  }
+
+  class salles {
+    +id : INT <<PK>>
+    +nom : VARCHAR
+    +departement : VARCHAR
+    +capacite : INT
+    +localisation : ENUM(annexe, principale)
+  }
+
+  class cours {
+    +id : INT <<PK>>
+    +nom : VARCHAR
+    +code_matiere : VARCHAR
+    +description : TEXT
+    +jour : VARCHAR
+    +date : DATE
+    +salle_id : INT <<FK>>
+    +enseignant_id : INT <<FK>>
+    +statut : ENUM(annulé, en_cours, fini)
+    +semestre : ENUM(s1, s2, s3, s4, s5)
+    +annee_scolaire : VARCHAR
+  }
+
+  class cours_documents {
+    +id : INT <<PK>>
+    +titre : VARCHAR
+    +fichier_url : VARCHAR
+    +promotion : VARCHAR
+    +specialite : VARCHAR
+    +matiere_id : INT <<FK>>
+    +upload_par : INT <<FK>>
+    +date_upload : DATETIME
+    +update_date : DATETIME
+    +type : ENUM(cours, annale, projet)
+  }
+
+  class emplois_du_temps {
+    +id : INT <<PK>>
+  }
+
+  class emplois_du_temps_cours {
+    +emploi_id : INT <<FK>>
+    +cours_id : INT <<FK>>
+  }
+
+  class seances {
+    +id : INT <<PK>>
+    +cours_id : INT <<FK>>
+    +date : DATE
+    +creneaux : VARCHAR
+    +salle : VARCHAR
+    +statut : ENUM(prévu, annulé, reporté)
+  }
+
+  class presences {
+    +id : INT <<PK>>
+    +seance_id : INT <<FK>>
+    +etudiant_id : INT <<FK>>
+    +statut : VARCHAR
+    +methode : ENUM(QR, IA)
+  }
+}
+
+package "Clubs & Evenements" {
+  class clubs {
+    +id : INT <<PK>>
+    +nom : VARCHAR
+    +description : TEXT
+    +user_id : INT <<FK>>
+  }
+
+  class club_membres {
+    +club_id : INT <<FK>>
+    +user_id : INT <<FK>>
+    +role : ENUM(president, membre, ...)
+  }
+
+  class evenements {
+    +id : INT <<PK>>
+    +titre : VARCHAR
+    +description : TEXT
+    +club_id : INT <<FK>>
+    +date_debut : DATETIME
+    +date_fin : DATETIME
+    +lieu : VARCHAR
+    +photo : VARCHAR
+    +affiche_url : VARCHAR
+  }
+}
+
+package "Communauté & Forum" {
+  class posts_communaute {
+    +id : INT <<PK>>
+    +contenu : TEXT
+    +image : VARCHAR
+    +anonyme : BOOLEAN
+    +date_post : DATETIME
+    +mots_cles : VARCHAR
+    +auteur_id : INT <<FK, nullable>>
+  }
+
+  class likes {
+    +id : INT <<PK>>
+    +post_id : INT <<FK>>
+    +user_id : INT <<FK>>
+  }
+
+  class commentaires_post {
+    +id : INT <<PK>>
+    +post_id : INT <<FK>>
+    +auteur_id : INT <<FK>>
+    +contenu : TEXT
+    +date_commentaire : DATETIME
+  }
+
+  class reponses_commentaire {
+    +commentaire_id : INT <<FK>>
+    +user_id : INT <<FK>>
+    +contenu : TEXT
+    +date_creation : DATETIME
+  }
+}
+
+package "Coworking" {
+  class sessions_coworking {
+    +id : INT <<PK>>
+    +createur_id : INT <<FK>>
+    +matiere_id : INT <<FK>>
+    +description : TEXT
+    +date : DATE
+    +heure_debut : TIME
+    +heure_fin : TIME
+  }
+
+  class participants_sessions {
+    +session_id : INT <<FK>>
+    +user_id : INT <<FK>>
+  }
+}
+
+package "Notifications" {
+  class notifications {
+    +id : INT <<PK>>
+    +titre : VARCHAR
+    +message : TEXT
+    +date_envoi : DATETIME
+    +type : ENUM(cours, evenement, rappel)
+  }
+
+  class lecture_notifications {
+    +id : INT <<PK>>
+    +notification_id : INT <<FK>>
+    +user_id : INT <<FK>>
+    +statut : ENUM(lu, non_lu)
+  }
+}
+
+package "Messagerie" {
+  class messages {
+    +id : INT <<PK>>
+    +expediteur_id : INT <<FK>>
+    +destinataire_id : INT <<FK>>
+    +contenu : TEXT
+    +date_envoi : DATETIME
+    +lu : BOOLEAN
+  }
+}
+
+' ── Relations Authentification ──
+users "1" -- "0..1" etudiants
+users "1" -- "0..1" enseignants
+
+' ── Relations Pédagogie ──
+enseignants "1" -- "many" matieres
+matieres "1" -- "many" cours_documents
+users "1" -- "many" cours_documents
+salles "1" -- "many" cours
+enseignants "1" -- "many" cours
+emplois_du_temps "1" -- "many" emplois_du_temps_cours
+cours "1" -- "many" emplois_du_temps_cours
+cours "1" -- "many" seances
+seances "1" -- "many" presences
+etudiants "1" -- "many" presences
+
+' ── Relations Clubs ──
+users "1" -- "many" clubs
+clubs "1" -- "many" club_membres
+users "1" -- "many" club_membres
+clubs "1" -- "many" evenements
+
+' ── Relations Forum ──
+users "1" -- "many" posts_communaute
+posts_communaute "1" -- "many" likes
+users "1" -- "many" likes
+posts_communaute "1" -- "many" commentaires_post
+users "1" -- "many" commentaires_post
+commentaires_post "1" -- "many" reponses_commentaire
+users "1" -- "many" reponses_commentaire
+
+' ── Relations Coworking ──
+users "1" -- "many" sessions_coworking
+matieres "1" -- "many" sessions_coworking
+sessions_coworking "1" -- "many" participants_sessions
+users "1" -- "many" participants_sessions
+
+' ── Relations Notifications ──
+notifications "1" -- "many" lecture_notifications
+users "1" -- "many" lecture_notifications
+users "1" -- "many" notifications 
+
+' ── Relations Messagerie ──
+users "1" -- "many" messages 
+users "1" -- "many" messages 
+
+@enduml
